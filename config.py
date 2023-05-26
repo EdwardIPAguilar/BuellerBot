@@ -1,0 +1,4 @@
+USER_NAME = "JOHN"
+AUDIO_GENERATION_ID = "VR6AewLTigWG4xSOukaG"
+#AUDIO_GENERATION_ID = "21m00Tcm4TlvDq8ikWAM"
+TRANSCRIPT_FILE = "transcriptions/transcript.txt"

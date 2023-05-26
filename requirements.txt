@@ -1,0 +1,13 @@
+wavio
+git+https://github.com/openai/whisper.git
+ib_insync
+nest_asyncio
+pandas
+scipy
+openai
+playsound
+PyObjC
+torch
+pyscreeze
+pyautogui
+opencv

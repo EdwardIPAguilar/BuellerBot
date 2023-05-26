@@ -1,0 +1,1 @@
+Okay, so we're operational. This all works.Yeah, okay, so it's deleting everything that was in there prior because we don't need it and then it's
