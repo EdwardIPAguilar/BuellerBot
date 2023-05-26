@@ -6,7 +6,7 @@ freq = 44100
 duration = 5 # in seconds
 
 print('Started Recording')
-
+# cock
 while True:
     ts = datetime.datetime.now()
     filename = ts.strftime("%Y-%m-%d %H:%M:%S")
