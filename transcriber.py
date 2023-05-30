@@ -6,6 +6,7 @@ warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
 
 import config
 import whisper
+import time
 import os, glob
 from playsound import playsound
 import openai
@@ -17,29 +18,32 @@ import urllib.request
 import asyncio
 from aiofile import async_open
 from typing import Tuple
+from pynput.mouse import Button, Controller
+import cv2
+import numpy as np
 
-# Create an unverified HTTPS context
+mouse = Controller()
 ssl._create_default_https_context = ssl._create_unverified_context
+openai.api_key = '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'
 
-openai.api_key = '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'
+def find_image_on_screen(image_file: str):
+    screen = np.array(pag.screenshot())
+    screen_gray = cv2.cvtColor(screen, cv2.COLOR_BGR2GRAY)  # convert to grayscale
+    template = cv2.imread(image_file, 0)  # load template image in grayscale
+    result = cv2.matchTemplate(screen_gray, template, cv2.TM_CCOEFF_NORMED)
+    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+    return max_loc[0] + template.shape[1] // 2, max_loc[1] + template.shape[0] // 2  # return the center of the matched area
 
 def duplicate_file(original_file_name, duplicate_file_name):
-    # Open the original file in read mode
     with open(original_file_name, 'r') as original_file:
         content = original_file.read()
-
-    # Open the duplicate file in write mode
     with open(duplicate_file_name, 'w') as duplicate_file:
         duplicate_file.write(content)
-
     print(f"{duplicate_file_name} has been created successfully.")
 
-# find most recent files in a directory
 recordings_dir = os.path.join('recordings', '*')
 
 model = whisper.load_model("small")
-
-# list to store which wav files have been transcribed
 transcribed = []
 print("Started Transcription")
 
@@ -47,6 +51,7 @@ with open(config.TRANSCRIPT_FILE, 'r+') as f:
     f.truncate()
 
 files = glob.iglob(recordings_dir)
+
 for x in files:
     print("deleting:", x)
     os.remove(x)
@@ -56,7 +61,7 @@ while True:
     files = sorted(glob.iglob(recordings_dir), key=os.path.getctime, reverse=True)
     if len(files) < 1:
         continue
-
+    
     latest_recording = files[0]
     latest_recording_filename = latest_recording.split('/')[1]
 
@@ -70,12 +75,10 @@ while True:
 
         if result.no_speech_prob < 0.5:
             print("Live Transcript: " + result.text)
-
-            # append text to transcript file
             with open(config.TRANSCRIPT_FILE, 'a+') as f:
                 f.write(result.text)
                 f.truncate()
-                f.seek(0)  # move file pointer to beginning
+                f.seek(0)  
                 longer_daddy = f.read()
                 if len(longer_daddy) > 5000:
                     print(">>" + longer_daddy)
@@ -89,39 +92,40 @@ while True:
                     print(f'WHAT WANT TO GIVE ROBOT: {brain_needed}')
                     print("------yepcock---------")
 
-                    #Send to GPT for processing
                     completion = openai.Completion.create(
                         model="text-davinci-003",
                         prompt=brain_needed,
                         max_tokens=75,
                         temperature=0
                     )
-                    #save output as a variable for EL
+
                     brain_given = completion.choices[0].text
                     with open('brain_given.txt', 'w') as file:
                         file.write(brain_given)
                     print(f'WHAT ROBOT RESPONSED TO: {brain_needed}')
                     print(f'ROBOT ABOUT TO SAY: {brain_given}')
                     print("ROBOT IS ABOUT TO UNMUTE")
-                    #Looks for muted button, then unmutes it
-                    x,y = ps.locateCenterOnScreen('unmute_image.png', confidence=0.7)
-                    pag.moveTo(x, y, duration=1)
-                    pag.click()
+
+                    x, y = find_image_on_screen('g_unmute.png')
+                    mouse.position = (x, y)
+                    mouse.click(Button.left, 1)
+                    time.sleep(0.1)
+                    mouse.click(Button.left, 1)
+
                     t2a("Hello? Is my mic working? Can you hear me?")
                     playsound('output.mp3')
                     with open("transcriptions/transcript.txt", "r+") as fx:
                         fx.truncate()
                         print("Transcript Cleared")
-                        # text to audio via EL
                         print("Text sent to EL API")
                         t2a(brain_given)
                         print("EL API Response Received")
-                        #pass brain_given to EL code here!
                         playsound('output.mp3')
                         print("ROBOT IS ABOUT TO MUTE")
-                        #looks for unmuted button, then mutes it
-                        x,y = ps.locateCenterOnScreen('mic_image.png', confidence=0.7)
-                        pag.moveTo(x, y, duration=1)
-                        pag.click()
-        # save list of transcribed recordings so that we don't transcribe the same one again
+                        x, y = find_image_on_screen('g_mute.png')
+                        mouse.position = (x, y)
+                        mouse.click(Button.left, 1)
+                        time.sleep(0.1)
+                        mouse.click(Button.left, 1)
+
         transcribed.append(latest_recording)
