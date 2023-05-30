@@ -21,7 +21,7 @@ from typing import Tuple
 # Create an unverified HTTPS context
 ssl._create_default_https_context = ssl._create_unverified_context
 
-openai.api_key = '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'
+openai.api_key = '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'
 
 def duplicate_file(original_file_name, duplicate_file_name):
     # Open the original file in read mode
@@ -98,6 +98,8 @@ while True:
                     )
                     #save output as a variable for EL
                     brain_given = completion.choices[0].text
+                    with open('brain_given.txt', 'w') as file:
+                        file.write(brain_given)
                     print(f'WHAT ROBOT RESPONSED TO: {brain_needed}')
                     print(f'ROBOT ABOUT TO SAY: {brain_given}')
                     print("ROBOT IS ABOUT TO UNMUTE")

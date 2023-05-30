@@ -1,4 +1,5 @@
+import os
+
 USER_NAME = "JOHN"
-AUDIO_GENERATION_ID = "VR6AewLTigWG4xSOukaG"
-#AUDIO_GENERATION_ID = "21m00Tcm4TlvDq8ikWAM"
+AUDIO_GENERATION_ID = os.getenv("AUDIO_GENERATION_ID", "default value")
 TRANSCRIPT_FILE = "transcriptions/transcript.txt"

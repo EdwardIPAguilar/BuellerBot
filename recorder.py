@@ -4,14 +4,13 @@ import datetime
 
 freq = 44100
 duration = 5 # in seconds
-
 print('Started Recording')
-# cock
+# print(sd.query_devices())
 while True:
     ts = datetime.datetime.now()
     filename = ts.strftime("%Y-%m-%d %H:%M:%S")
-
-    recording = sd.rec(int(duration * freq), samplerate=freq, channels=1)
+    device_id = 1 #you can use print(sd.query_devices()) to find the index of your device
+    recording = sd.rec(int(duration * freq), samplerate=freq, channels=1, device=device_id)
 
     # Record audio for the given number of seconds
     sd.wait()

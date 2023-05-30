@@ -1,14 +1,16 @@
 import requests
-import config
+import os
 
 def t2a(input_text):
     CHUNK_SIZE = 1024
-    url = "https://api.elevenlabs.io/v1/text-to-speech/" + config.AUDIO_GENERATION_ID
+    audio_generation_id = os.getenv("AUDIO_GENERATION_ID")
+    print("this is my current voice ID:", audio_generation_id)
+    url = "https://api.elevenlabs.io/v1/text-to-speech/" + audio_generation_id
 
     headers = {
         "Accept": "audio/mpeg",
         "Content-Type": "application/json",
-        "xi-api-key": "91892d9960d372042b7079ac80d11754"
+        "xi-api-key": "a46efd8288ce2402804c3ce385d3e6b4"
     }
 
     params = {
@@ -25,6 +27,7 @@ def t2a(input_text):
     }
 
     response = requests.post(url, json=data, headers=headers)
+    print(response)
     with open('output.mp3', 'wb') as f:
         for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
             if chunk:
