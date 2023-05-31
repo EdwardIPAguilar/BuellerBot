@@ -9,7 +9,7 @@ print('Started Recording')
 while True:
     ts = datetime.datetime.now()
     filename = ts.strftime("%Y-%m-%d %H:%M:%S")
-    device_id = 1 #you can use print(sd.query_devices()) to find the index of your device
+    device_id = 3 #update this to set with the blackhole channel automatically
     recording = sd.rec(int(duration * freq), samplerate=freq, channels=1, device=device_id)
 
     # Record audio for the given number of seconds

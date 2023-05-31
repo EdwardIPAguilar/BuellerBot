@@ -24,7 +24,7 @@ import numpy as np
 
 mouse = Controller()
 ssl._create_default_https_context = ssl._create_unverified_context
-openai.api_key = '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'
+openai.api_key = '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'
 
 def find_image_on_screen(image_file: str):
     screen = np.array(pag.screenshot())
@@ -56,76 +56,79 @@ for x in files:
     print("deleting:", x)
     os.remove(x)
 
-while True:
-    # get most recent wav recording in the recordings directory
-    files = sorted(glob.iglob(recordings_dir), key=os.path.getctime, reverse=True)
-    if len(files) < 1:
-        continue
-    
-    latest_recording = files[0]
-    latest_recording_filename = latest_recording.split('/')[1]
+def trigger_robot(brain_needed):
+    print(f'WHAT WANT TO GIVE ROBOT: {brain_needed}')
+    print("------yepcock---------")
 
-    if os.path.exists(latest_recording) and not latest_recording in transcribed:
-        audio = whisper.load_audio(latest_recording)
-        audio = whisper.pad_or_trim(audio)
-        mel = whisper.log_mel_spectrogram(audio).to(model.device)
-        options = whisper.DecodingOptions(language= 'en', fp16=False)
+    completion = openai.Completion.create(
+        model="text-davinci-003",
+        prompt=brain_needed,
+        max_tokens=75,
+        temperature=0
+    )
 
-        result = whisper.decode(model, mel, options)
+    brain_given = completion.choices[0].text
+    with open('brain_given.txt', 'w') as file:
+        file.write(brain_given)
+    print(f'WHAT ROBOT RESPONSED TO: {brain_needed}')
+    print(f'ROBOT ABOUT TO SAY: {brain_given}')
+    print("ROBOT IS ABOUT TO UNMUTE")
 
-        if result.no_speech_prob < 0.5:
-            print("Live Transcript: " + result.text)
-            with open(config.TRANSCRIPT_FILE, 'a+') as f:
-                f.write(result.text)
-                f.truncate()
-                f.seek(0)  
-                longer_daddy = f.read()
-                if len(longer_daddy) > 5000:
-                    print(">>" + longer_daddy)
-                    f.seek(0)
+    x, y = find_image_on_screen('g_unmute.png')
+    mouse.position = (x, y)
+    mouse.click(Button.left, 1)
+    time.sleep(0.5)
+    mouse.click(Button.left, 1)
+
+    t2a("Hello? Is my mic working? Can you hear me?")
+    playsound('output.mp3')
+    with open("transcriptions/transcript.txt", "r+") as fx:
+        fx.truncate()
+        print("Transcript Cleared")
+        print("Text sent to EL API")
+        t2a(brain_given)
+        print("EL API Response Received")
+        playsound('output.mp3')
+        print("ROBOT IS ABOUT TO MUTE")
+        x, y = find_image_on_screen('g_mute.png')
+        mouse.position = (x, y)
+        mouse.click(Button.left, 1)
+
+def start_transcription():
+    while True:
+        # get most recent wav recording in the recordings directory
+        files = sorted(glob.iglob(recordings_dir), key=os.path.getctime, reverse=True)
+        if len(files) < 1:
+            continue
+
+        latest_recording = files[0]
+        latest_recording_filename = latest_recording.split('/')[1]
+
+        if os.path.exists(latest_recording) and not latest_recording in transcribed:
+            audio = whisper.load_audio(latest_recording)
+            audio = whisper.pad_or_trim(audio)
+            mel = whisper.log_mel_spectrogram(audio).to(model.device)
+            options = whisper.DecodingOptions(language= 'en', fp16=False)
+
+            result = whisper.decode(model, mel, options)
+
+            if result.no_speech_prob < 0.5:
+                print("Live Transcript: " + result.text)
+                with open(config.TRANSCRIPT_FILE, 'a+') as f:
+                    f.write(result.text)
                     f.truncate()
-                    f.write(longer_daddy[-5000:])
+                    f.seek(0)  
+                    longer_daddy = f.read()
+                    if len(longer_daddy) > 5000:
+                        print(">>" + longer_daddy)
+                        f.seek(0)
+                        f.truncate()
+                        f.write(longer_daddy[-5000:])
 
-            with open("transcriptions/transcript.txt", "r") as fx:
-                brain_needed = fx.read()
-                if 'blueberry' in brain_needed:
-                    print(f'WHAT WANT TO GIVE ROBOT: {brain_needed}')
-                    print("------yepcock---------")
+                with open("transcriptions/transcript.txt", "r") as fx:
+                    brain_needed = fx.read()
+                    if 'blueberry' in brain_needed:
+                        trigger_robot(brain_needed)
 
-                    completion = openai.Completion.create(
-                        model="text-davinci-003",
-                        prompt=brain_needed,
-                        max_tokens=75,
-                        temperature=0
-                    )
+            transcribed.append(latest_recording)
 
-                    brain_given = completion.choices[0].text
-                    with open('brain_given.txt', 'w') as file:
-                        file.write(brain_given)
-                    print(f'WHAT ROBOT RESPONSED TO: {brain_needed}')
-                    print(f'ROBOT ABOUT TO SAY: {brain_given}')
-                    print("ROBOT IS ABOUT TO UNMUTE")
-
-                    x, y = find_image_on_screen('g_unmute.png')
-                    mouse.position = (x, y)
-                    mouse.click(Button.left, 1)
-                    time.sleep(0.1)
-                    mouse.click(Button.left, 1)
-
-                    t2a("Hello? Is my mic working? Can you hear me?")
-                    playsound('output.mp3')
-                    with open("transcriptions/transcript.txt", "r+") as fx:
-                        fx.truncate()
-                        print("Transcript Cleared")
-                        print("Text sent to EL API")
-                        t2a(brain_given)
-                        print("EL API Response Received")
-                        playsound('output.mp3')
-                        print("ROBOT IS ABOUT TO MUTE")
-                        x, y = find_image_on_screen('g_mute.png')
-                        mouse.position = (x, y)
-                        mouse.click(Button.left, 1)
-                        time.sleep(0.1)
-                        mouse.click(Button.left, 1)
-
-        transcribed.append(latest_recording)
