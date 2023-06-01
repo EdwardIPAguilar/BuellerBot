@@ -7,6 +7,12 @@ import config
 import threading
 import requests
 from transcriber import start_transcription, trigger_robot
+import queue
+import multiprocessing
+
+is_terminate = multiprocessing.Value('b', False)
+
+status_queue = queue.Queue()
 
 class TransparentScrollbar(ttk.Scrollbar):
     def set(self, *args, **kwargs):
@@ -44,16 +50,18 @@ class Application(tk.Frame):
             with open(transcript_path, 'w') as xr:
                 xr.write("Click 'Start' to begin transcribing")
             
-        self.update_text()  
+        self.update_text()
+        self.update_status()
+        self.master.protocol("WM_DELETE_WINDOW", self.on_closing)
 
     def create_widgets(self):
         self.configure(bg='#323232')
 
         self.label = tk.Label(self, text="⚙️ BuellerBot V1", bg="#323232", fg="white", font=('Helvetica', 24))
-        self.label.grid(row=0, column=0, columnspan=3, pady=10)
+        self.label.grid(row=0, column=0, columnspan=4, pady=10)
 
         self.button_frame = tk.Frame(self)
-        self.button_frame.grid(row=1, column=0, columnspan=3, pady=5)
+        self.button_frame.grid(row=1, column=0, columnspan=4, pady=5)
 
         style = ttk.Style()
         style.configure('TButton', focuscolor="black")
@@ -68,9 +76,29 @@ class Application(tk.Frame):
         self.label2 = tk.Label(self, text="Robot Response 🤖", bg="#323232", fg="white", font=('Helvetica', 18))
         self.label2.grid(row=2, column=1, pady=15)
 
+        frame_4th_row = tk.Frame(self, bg="#323232")
+        frame_4th_row.grid(row=4, column=0, columnspan=4, pady=15, sticky='ew')
+
+        self.hearme_label = tk.Label(frame_4th_row, text="Can you hear me now:", bg="#323232", fg="white", font=('Helvetica', 14))
+        self.hearme_label.grid(row=0, column=0, padx=(10, 0), sticky='w')
+        
+        self.hearme_toggle_var = tk.BooleanVar(value=True)
+        self.hearme_toggle = tk.Checkbutton(frame_4th_row, bg="#323232", variable=self.hearme_toggle_var)
+        self.hearme_toggle.grid(row=0, column=1, sticky='w')
+
+        self.automute_label = tk.Label(frame_4th_row, text="Auto Mute / Unmute:", bg="#323232", fg="white", font=('Helvetica', 14))
+        self.automute_label.grid(row=0, column=2, padx=(10, 0), sticky='w')
+
+        self.automute_toggle_var = tk.BooleanVar(value=True)
+        self.automute_toggle = tk.Checkbutton(frame_4th_row, bg="#323232",variable=self.automute_toggle_var)
+        self.automute_toggle.grid(row=0, column=3, sticky='w')
+
+        self.status_label = tk.Label(frame_4th_row, text="Status: BuellerBot is on standby", bg="#323232", fg="white", font=('Helvetica', 14, 'italic'))
+        self.status_label.grid(row=0, column=4, padx=(10, 0), sticky='w')
+
         self.brain_given_text = tk.Text(self, font=custom_font, padx=10, pady=10)
         self.brain_given_text.grid(row=3, column=1, padx=15, pady=5, sticky='nsew')
-        
+
         style = ttk.Style()
         style.layout('TScrollbar', [])  # Empty layout (nothing will be drawn)
         style.configure('TScrollbar', troughcolor='systemTransparent', background='systemTransparent', width=0)  # Make Scrollbar and trough transparent
@@ -99,9 +127,9 @@ class Application(tk.Frame):
         self.columnconfigure([0, 1], weight=1)
 
     def upload(self):
-        self.filename = filedialog.askopenfilename()
-        messagebox.showinfo("Information", "File uploaded, processing now!")
-        print(f'the path to the file is {self.filename}')
+        self.filenames = filedialog.askopenfilenames()
+        messagebox.showinfo("Information", "Files uploaded, processing now!")
+        print(f'the path to the file is {self.filenames}')
         
         print("Attempting Voice Clone")
         url = "https://api.elevenlabs.io/v1/voices/add"
@@ -117,12 +145,13 @@ class Application(tk.Frame):
         }
 
         files = [
-            ('files', (os.path.basename(self.filename), open(self.filename, 'rb'), 'audio/mpeg')),
+            ('files', (os.path.basename(self.filenames[0]), open(self.filenames[0], 'rb'), 'audio/mpeg')),
+            ('files', (os.path.basename(self.filenames[1]), open(self.filenames[1], 'rb'), 'audio/mpeg')),
         ]
         response = requests.post(url, headers=headers, data=data, files=files)
         custom_voice_id = response.text
         print("this is your custom voice id:", custom_voice_id)
-        os.environ["AUDIO_GENERATION_ID"] = 'YepOqmv3Box1TU5q38ex'
+        os.environ["AUDIO_GENERATION_ID"] = 'qSRWIsp602dFWUQe56Uj'
         messagebox.showinfo("Information", "Your custom voice is ready!")
 
     def generate_now(self):
@@ -130,15 +159,27 @@ class Application(tk.Frame):
         if os.path.exists(transcript_path) and os.path.getsize(transcript_path) > 0:
             with open(transcript_path, 'r') as transcript_file:
                 transcript = transcript_file.read()
-            trigger_robot(transcript)
+            trigger_robot(transcript, status_queue, is_terminate)
 
     def start(self):
+        global is_terminate
+        is_terminate.value = False
         print("Start Button Pressed")
         subprocess.Popen("./activate-school-bot.sh", shell=True)
-        thread = threading.Thread(target=start_transcription)
+        thread = threading.Thread(target=start_transcription, args=(status_queue, is_terminate))
         thread.start()
+        
+    def clear_transcript(self):
+        with open(config.TRANSCRIPT_FILE, 'r+') as f:
+            f.truncate()
+        with open("transcriptions/transcript.txt", "r+") as fx:
+            fx.truncate()
+        print("Transcript Cleared")
 
     def stop(self):
+        global is_terminate
+        is_terminate.value = True
+        self.clear_transcript()
         print("Stop Button Pressed")
         with open('pids.txt', 'r') as file:
             lines = file.readlines()
@@ -146,17 +187,33 @@ class Application(tk.Frame):
         pid1 = int(lines[0].strip())
         pid2 = int(lines[1].strip())
 
-        os.kill(pid1, signal.SIGTERM)
-        print(f'PID1: {pid1} Killed')
-        os.kill(pid2, signal.SIGTERM)
-        print(f'PID2: {pid2} Killed')
+        try:
+            os.kill(pid1, signal.SIGTERM)
+            print(f'PID1: {pid1} Killed')
+        except ProcessLookupError:
+            print(f"PID1: {pid1} does not exist or has already been terminated")
+            
+        try:
+            os.kill(pid2, signal.SIGTERM)
+            print(f'PID2: {pid2} Killed')
+        except ProcessLookupError:
+            print(f"PID2: {pid2} does not exist or has already been terminated")
 
+    def on_closing(self):
+        self.stop()
+        self.master.destroy()
+
+    def update_status(self):
+        while not status_queue.empty():
+            status = status_queue.get()
+            self.status_label['text'] = f"Status: {status}"
+        self.after(1000, self.update_status)
 
     def update_text(self):
         transcript_path = 'transcriptions/transcript.txt'
         if os.path.exists(transcript_path) and os.path.getsize(transcript_path) > 0:
             with open(transcript_path, 'r') as transcript_file:
-                transcript = transcript_file.read()
+                transcript = transcript_file.read().strip()
 
             self.transcript_text.delete('1.0', tk.END)
             self.transcript_text.insert(tk.END, transcript)
@@ -165,7 +222,7 @@ class Application(tk.Frame):
         brain_given_path = 'brain_given.txt'
         if os.path.exists(brain_given_path) and os.path.getsize(brain_given_path) > 0:
             with open(brain_given_path, 'r') as brain_given_file:
-                brain_given = brain_given_file.read()
+                brain_given = brain_given_file.read().strip()
 
             self.brain_given_text.delete('1.0', tk.END)
             self.brain_given_text.insert(tk.END, brain_given)

@@ -21,10 +21,12 @@ from typing import Tuple
 from pynput.mouse import Button, Controller
 import cv2
 import numpy as np
+from threading import Thread
 
+is_bot_speaking = False
 mouse = Controller()
 ssl._create_default_https_context = ssl._create_unverified_context
-openai.api_key = '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'
+openai.api_key = 'DEFAULT'
 
 def find_image_on_screen(image_file: str):
     screen = np.array(pag.screenshot())
@@ -56,48 +58,87 @@ for x in files:
     print("deleting:", x)
     os.remove(x)
 
-def trigger_robot(brain_needed):
-    print(f'WHAT WANT TO GIVE ROBOT: {brain_needed}')
-    print("------yepcock---------")
+def trigger_robot(brain_needed, status_queue, is_terminate):
+    def run():
+        global is_bot_speaking
+        is_bot_speaking = True
+        try:
+            print(f'WHAT WANT TO GIVE ROBOT: {brain_needed}')
+            status_queue.put("BuellerBot is thinking")
+            print("------yepcock---------")
 
-    completion = openai.Completion.create(
-        model="text-davinci-003",
-        prompt=brain_needed,
-        max_tokens=75,
-        temperature=0
-    )
+            completion = openai.Completion.create(
+                model="text-davinci-003",
+                prompt=brain_needed,
+                max_tokens=75,
+                temperature=0
+            )
 
-    brain_given = completion.choices[0].text
-    with open('brain_given.txt', 'w') as file:
-        file.write(brain_given)
-    print(f'WHAT ROBOT RESPONSED TO: {brain_needed}')
-    print(f'ROBOT ABOUT TO SAY: {brain_given}')
-    print("ROBOT IS ABOUT TO UNMUTE")
+            brain_og = completion.choices[0].text
+            brain_given = brain_og.replace('\n', '')
+            with open('brain_given.txt', 'w') as file:
+                file.write(brain_given.strip())
+            with open('transcriptions/transcript.txt', 'a') as file:
+                file.write('\n\nBuellerBot Response For Context: ' + brain_given.strip() + '\n\nTranscript: ')
+            print(f'WHAT ROBOT RESPONSED TO: {brain_needed}')
+            print(f'ROBOT ABOUT TO SAY: {brain_given}')
+            if is_terminate.value:
+                raise TerminateSignal
+            status_queue.put("BuellerBot is unmuting")
+            print("ROBOT IS ABOUT TO UNMUTE")
 
-    x, y = find_image_on_screen('g_unmute.png')
-    mouse.position = (x, y)
-    mouse.click(Button.left, 1)
-    time.sleep(0.5)
-    mouse.click(Button.left, 1)
+            x, y = find_image_on_screen('g_unmute.png')
+            mouse.position = (x, y)
+            mouse.click(Button.left, 1)
+            time.sleep(1)
+            # mouse.click(Button.left, 1)
+            status_queue.put("BuellerBot is buying time")
+            if is_terminate.value:
+                raise TerminateSignal
+            t2a("Hey sorry i''m having some audio issues. Is my mic working? Can you hear me?")
+            playsound('output.mp3')
+            # with open("transcriptions/transcript.txt", "r+") as fx:
+            #     fx.truncate()
+            print("Transcript Cleared")
+            print("Text sent to EL API")
+            if is_terminate.value:
+                raise TerminateSignal
+            status_queue.put("BuellerBot is generating")
+            t2a(brain_given)
+            print("EL API Response Received")
+            status_queue.put("BuellerBot is responding")
+            playsound('output.mp3')
+            status_queue.put("BuellerBot is about to mute")
+            print("ROBOT IS ABOUT TO MUTE")
+            x, y = find_image_on_screen('g_mute.png')
+            mouse.position = (x, y)
+            mouse.click(Button.left, 1)
+            status_queue.put("BuellerBot is on standby")
+            is_bot_speaking = False
+        finally:
+            is_bot_speaking = False
+    Thread(target=run).start()
 
-    t2a("Hello? Is my mic working? Can you hear me?")
-    playsound('output.mp3')
-    with open("transcriptions/transcript.txt", "r+") as fx:
-        fx.truncate()
-        print("Transcript Cleared")
-        print("Text sent to EL API")
-        t2a(brain_given)
-        print("EL API Response Received")
-        playsound('output.mp3')
-        print("ROBOT IS ABOUT TO MUTE")
-        x, y = find_image_on_screen('g_mute.png')
-        mouse.position = (x, y)
-        mouse.click(Button.left, 1)
+class TerminateSignal(Exception):
+    pass
 
-def start_transcription():
+def start_transcription(status_queue, is_terminate):
+    global is_bot_speaking
+    status_queue.put("BuellerBot is listening")
+    
     while True:
+        if is_bot_speaking:
+            continue
+
+        if is_terminate.value:
+            print("terminate hit, break function")
+            break
+
         # get most recent wav recording in the recordings directory
-        files = sorted(glob.iglob(recordings_dir), key=os.path.getctime, reverse=True)
+        try:
+            files = sorted(glob.iglob(recordings_dir), key=os.path.getctime, reverse=True)
+        except FileNotFoundError:
+            files = []
         if len(files) < 1:
             continue
 
@@ -127,8 +168,12 @@ def start_transcription():
 
                 with open("transcriptions/transcript.txt", "r") as fx:
                     brain_needed = fx.read()
-                    if 'blueberry' in brain_needed:
-                        trigger_robot(brain_needed)
+                    if 'edward' in brain_needed or 'eward' in brain_needed or 'Edward' in brain_needed:
+                        trigger_robot(brain_needed, status_queue, is_terminate)
+                        brain_needed = brain_needed.replace('edward', '')
+                        brain_needed = brain_needed.replace('Edward', '')
+                        brain_needed = brain_needed.replace('eward', '')
+                        with open("transcriptions/transcript.txt", "w") as fw:
+                            fw.write(brain_needed)
 
             transcribed.append(latest_recording)
-

@@ -2,14 +2,27 @@ import sounddevice as sd
 import wavio as wv
 import datetime
 
+def get_device_id_by_name(name):
+    devices = sd.query_devices()
+    for i, device in enumerate(devices):
+        if name.lower() in device['name'].lower():
+            return i
+    return None
+
 freq = 44100
 duration = 5 # in seconds
 print('Started Recording')
-# print(sd.query_devices())
+
+device_id = get_device_id_by_name("Blackhole 2ch")
+
+if device_id is None:
+    print('Blackhole device not found')
+    exit(1)
+
 while True:
     ts = datetime.datetime.now()
     filename = ts.strftime("%Y-%m-%d %H:%M:%S")
-    device_id = 3 #update this to set with the blackhole channel automatically
+
     recording = sd.rec(int(duration * freq), samplerate=freq, channels=1, device=device_id)
 
     # Record audio for the given number of seconds
