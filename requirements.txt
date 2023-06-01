@@ -11,15 +11,8 @@ torch
 pyscreeze
 pyautogui
 opencv-python
-<<<<<<< HEAD
 python-dotenv
 sounddevice
 requests
 aiofile
 pynput
-=======
-requests
-aiofile
-pynput
-sounddevice
->>>>>>> b158f34ce055d50488b65b811f26a334a5c7a7f6

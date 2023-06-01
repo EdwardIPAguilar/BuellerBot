@@ -73,7 +73,6 @@ def trigger_robot(brain_needed, status_queue, is_terminate):
         try:
             print(f'WHAT WANT TO GIVE ROBOT: {brain_needed}')
             status_queue.put("BuellerBot is thinking")
-            print("------yepcock---------")
             #the brains of the operation
             completion = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
@@ -182,12 +181,12 @@ def start_transcription(status_queue, is_terminate):
                     f.write(result.text)
                     f.truncate()
                     f.seek(0)  
-                    longer_daddy = f.read()
-                    if len(longer_daddy) > 5000:
-                        print(">>" + longer_daddy)
+                    transcript_text = f.read()
+                    if len(transcript_text) > 5000:
+                        print(">>" + transcript_text)
                         f.seek(0)
                         f.truncate()
-                        f.write(longer_daddy[-5000:])
+                        f.write(transcript_text[-5000:])
 
                 with open("transcriptions/transcript.txt", "r") as fx:
                     brain_needed = fx.read()
