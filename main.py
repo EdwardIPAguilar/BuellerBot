@@ -129,14 +129,14 @@ class Application(tk.Frame):
     def upload(self):
         self.filenames = filedialog.askopenfilenames()
         messagebox.showinfo("Information", "Files uploaded, processing now!")
-        print(f'the path to the file is {self.filenames}')
+        print(f'the path to the files is {self.filenames}')
         
         print("Attempting Voice Clone")
         url = "https://api.elevenlabs.io/v1/voices/add"
 
         headers = {
             "Accept": "application/json",
-            "xi-api-key": "a46efd8288ce2402804c3ce385d3e6b4"
+            "xi-api-key": "9e72e6bd272f933f1daa508f8fe9fbc7"
         }
 
         data = {
@@ -144,14 +144,14 @@ class Application(tk.Frame):
             'labels': '{"accent": "American"}'
         }
 
-        files = [
-            ('files', (os.path.basename(self.filenames[0]), open(self.filenames[0], 'rb'), 'audio/mpeg')),
-            ('files', (os.path.basename(self.filenames[1]), open(self.filenames[1], 'rb'), 'audio/mpeg')),
-        ]
+        files = []
+        for file in self.filenames:
+            files.append(('files', (os.path.basename(file), open(file, 'rb'), 'audio/mpeg')))
+
         response = requests.post(url, headers=headers, data=data, files=files)
         custom_voice_id = response.text
         print("this is your custom voice id:", custom_voice_id)
-        os.environ["AUDIO_GENERATION_ID"] = 'qSRWIsp602dFWUQe56Uj'
+        os.environ["AUDIO_GENERATION_ID"] = 'lF5jGWAmp19kVdW7vg8C'
         messagebox.showinfo("Information", "Your custom voice is ready!")
 
     def generate_now(self):

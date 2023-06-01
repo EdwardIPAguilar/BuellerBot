@@ -4,14 +4,14 @@ import os
 def t2a(input_text):
     CHUNK_SIZE = 1024
     # audio_generation_id = os.getenv("AUDIO_GENERATION_ID")
-    audio_generation_id = 'qSRWIsp602dFWUQe56Uj'
+    audio_generation_id = 'lF5jGWAmp19kVdW7vg8C'
     print("this is my current voice ID:", audio_generation_id)
     url = "https://api.elevenlabs.io/v1/text-to-speech/" + audio_generation_id
 
     headers = {
         "Accept": "audio/mpeg",
         "Content-Type": "application/json",
-        "xi-api-key": "a46efd8288ce2402804c3ce385d3e6b4"
+        "xi-api-key": "9e72e6bd272f933f1daa508f8fe9fbc7"
     }
 
     params = {

@@ -6,10 +6,10 @@ def deleteVoices(voiceID):
 
   headers = {
     "Accept": "application/json",
-    "xi-api-key": "a46efd8288ce2402804c3ce385d3e6b4"
+    "xi-api-key": "9e72e6bd272f933f1daa508f8fe9fbc7"
   }
 
   response = requests.delete(url, headers=headers)
   print(response.text)
 
-deleteVoices("mIn0JUGno1hwWyH63tCH")
+deleteVoices("qSRWIsp602dFWUQe56Uj")
