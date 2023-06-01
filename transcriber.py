@@ -178,12 +178,12 @@ def start_transcription(status_queue, is_terminate):
                     f.write(result.text)
                     f.truncate()
                     f.seek(0)  
-                    longer_daddy = f.read()
-                    if len(longer_daddy) > 5000:
-                        print(">>" + longer_daddy)
+                    transcript_text = f.read()
+                    if len(transcript_text) > 5000:
+                        print(">>" + transcript_text)
                         f.seek(0)
                         f.truncate()
-                        f.write(longer_daddy[-5000:])
+                        f.write(transcript_text[-5000:])
 
                 with open("transcriptions/transcript.txt", "r") as fx:
                     brain_needed = fx.read()
