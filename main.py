@@ -126,6 +126,38 @@ class Application(tk.Frame):
         self.rowconfigure(3, weight=1)
         self.columnconfigure([0, 1], weight=1)
 
+    def store_buying_time(self):
+        CHUNK_SIZE = 1024
+        # audio_generation_id = os.getenv("AUDIO_GENERATION_ID")
+        audio_generation_id = 'lF5jGWAmp19kVdW7vg8C'
+        url = "https://api.elevenlabs.io/v1/text-to-speech/" + audio_generation_id
+
+        headers = {
+            "Accept": "audio/mpeg",
+            "Content-Type": "application/json",
+            "xi-api-key": "9e72e6bd272f933f1daa508f8fe9fbc7"
+        }
+
+        params = {
+            'optimize_streaming_latency': '3'
+        }
+
+        data = {
+            "text": 'Hey sorry i''m having some audio issues. Is my mic working? Can you hear me?',
+            "model_id": "eleven_monolingual_v1",
+            "voice_settings": {
+                "stability": 0.5,
+                "similarity_boost": 0.5
+            }
+        }
+
+        response = requests.post(url, json=data, headers=headers)
+        print(response)
+        with open('buyingtime.mp3', 'wb') as f:
+            for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
+                if chunk:
+                    f.write(chunk)
+
     def upload(self):
         self.filenames = filedialog.askopenfilenames()
         messagebox.showinfo("Information", "Files uploaded, processing now!")
@@ -153,7 +185,8 @@ class Application(tk.Frame):
         print("this is your custom voice id:", custom_voice_id)
         os.environ["AUDIO_GENERATION_ID"] = 'lF5jGWAmp19kVdW7vg8C'
         messagebox.showinfo("Information", "Your custom voice is ready!")
-
+        self.store_buying_time()
+    
     def generate_now(self):
         transcript_path = 'transcriptions/transcript.txt'
         if os.path.exists(transcript_path) and os.path.getsize(transcript_path) > 0:

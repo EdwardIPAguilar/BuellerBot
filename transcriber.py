@@ -23,6 +23,8 @@ import cv2
 import numpy as np
 from threading import Thread
 from dotenv import load_dotenv
+import concurrent.futures
+
 
 #Common transcription variations of your name. Case sensitive.
 keywordOne = 'edward'
@@ -69,11 +71,10 @@ def trigger_robot(brain_needed, status_queue, is_terminate):
     def run():
         global is_bot_speaking
         is_bot_speaking = True
-        print('is bot speaking set 2 true')
+
         try:
-            print(f'WHAT WANT TO GIVE ROBOT: {brain_needed}')
             status_queue.put("BuellerBot is thinking")
-            print("------yepcock---------")
+
             #the brains of the operation
             completion = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
@@ -83,6 +84,7 @@ def trigger_robot(brain_needed, status_queue, is_terminate):
                 max_tokens=55,
                 temperature=0.2
             )
+
             #the lobotomy of the operation
             brain_og = completion.choices[0].message.content
             brain_given = brain_og.replace('\n', '')
@@ -90,13 +92,18 @@ def trigger_robot(brain_needed, status_queue, is_terminate):
                 file.write(brain_given.strip())
             with open('transcriptions/transcript.txt', 'a') as file:
                 file.write('\n\nPAST RESPONSE: ' + brain_given.strip() + '\n\nTRANSCRIPT:') #allows for follow-up questions. 
-            print(f'WHAT ROBOT RESPONSED TO: {brain_needed}')
-            print(f'ROBOT ABOUT TO SAY: {brain_given}')
+            print(f'Bot Response: {brain_given}')
+
+            # Using concurrent.futures to create a separate thread for t2a
+            print('attempting to async')
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(t2a, brain_given) # start t2a in a new thread
+            print('finished sending async')
+            
+            #unmuting and buy time
             if is_terminate.value:
                 raise TerminateSignal
             status_queue.put("BuellerBot is unmuting")
-            print("ROBOT IS ABOUT TO UNMUTE")
-            #search for mute button
             x, y = find_image_on_screen('g_unmute.png')
             mouse.position = (x, y)
             mouse.click(Button.left, 1)
@@ -105,38 +112,27 @@ def trigger_robot(brain_needed, status_queue, is_terminate):
             status_queue.put("BuellerBot is buying time")
             if is_terminate.value:
                 raise TerminateSignal
-            t2a("Hey sorry i''m having some audio issues. Is my mic working? Can you hear me?")
             is_bot_speaking = True
-            print('is bot speaking set 2 true')
-            playsound('output.mp3')
-            # with open("transcriptions/transcript.txt", "r+") as fx:
-            #     fx.truncate()
-            print("Transcript Cleared")
-            print("Text sent to EL API")
+            playsound('buyingtime.mp3')
+            
+            print('awaiting for async')
+            future.result() # wait for t2a to finish here before playing sound
+
+            #play the actual output and then mute
             if is_terminate.value:
                 raise TerminateSignal
-            status_queue.put("BuellerBot is generating")
-            t2a(brain_given)
-            print("EL API Response Received")
             status_queue.put("BuellerBot is responding")
             is_bot_speaking = True
-            print('is bot speaking set 2 true')
             playsound('output.mp3')
-            time.sleep(5) #allow it to respond w/o getting caught in the transcript
             status_queue.put("BuellerBot is about to mute")
-            print("ROBOT IS ABOUT TO MUTE")
-            is_bot_speaking = True
-            print('is bot speaking set 2 true')
             x, y = find_image_on_screen('g_mute.png')
             mouse.position = (x, y)
             mouse.click(Button.left, 1)
             status_queue.put("BuellerBot is on standby")
             is_bot_speaking = False
-            print('is bot speaking set 2 false')
+
         finally:
             is_bot_speaking = False
-            print('is bot speaking set 2 false')
-            # Add some delay here to ensure the bot is fully finished before resuming transcription
     Thread(target=run).start()
 
 class TerminateSignal(Exception):

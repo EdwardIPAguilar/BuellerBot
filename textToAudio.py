@@ -5,7 +5,7 @@ def t2a(input_text):
     CHUNK_SIZE = 1024
     # audio_generation_id = os.getenv("AUDIO_GENERATION_ID")
     audio_generation_id = 'lF5jGWAmp19kVdW7vg8C'
-    print("this is my current voice ID:", audio_generation_id)
+    # print("this is my current voice ID:", audio_generation_id)
     url = "https://api.elevenlabs.io/v1/text-to-speech/" + audio_generation_id
 
     headers = {
