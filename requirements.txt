@@ -10,4 +10,8 @@ PyObjC
 torch
 pyscreeze
 pyautogui
-opencv
+opencv-python
+requests
+aiofile
+pynput
+sounddevice
