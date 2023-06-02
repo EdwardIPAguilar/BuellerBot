@@ -1,6 +1,8 @@
 # Suppressing annoying "NumbaDeprecationWarning"
 from numba.core.errors import NumbaDeprecationWarning, NumbaPendingDeprecationWarning
 import warnings
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
 warnings.simplefilter('ignore', category=NumbaDeprecationWarning)
 warnings.simplefilter('ignore', category=NumbaPendingDeprecationWarning)
 

@@ -12,4 +12,4 @@ def deleteVoices(voiceID):
   response = requests.delete(url, headers=headers)
   print(response.text)
 
-deleteVoices("qSRWIsp602dFWUQe56Uj")
+deleteVoices("0uBEktzsEUNkeSS7TMSm")

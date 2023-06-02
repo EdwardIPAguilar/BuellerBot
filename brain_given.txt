@@ -1,5 +1,1 @@
-<<<<<<< HEAD
-Well, defaulting is essentially failing to meet a financial obligation, such as not paying back a loan or missing a payment on a credit card. It's definitely not something you want to do if you can avoid it!
-=======
-Listening for activation word...
->>>>>>> 53fd5954c7c7e0cbe157ed72122050a2166f3e20
+When you default, it means you have failed to fulfill your financial obligations.

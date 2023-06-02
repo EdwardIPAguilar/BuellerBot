@@ -12,19 +12,10 @@ from playsound import playsound
 import openai
 from textToAudio import t2a
 import pyautogui as pag
-import pyscreeze as ps
 import ssl
 import urllib.request
-import asyncio
-from aiofile import async_open
-from typing import Tuple
-from pynput.mouse import Button, Controller
-import cv2
-import numpy as np
 from threading import Thread
 from dotenv import load_dotenv
-import concurrent.futures
-
 
 #Common transcription variations of your name. Case sensitive.
 keywordOne = 'edward'
@@ -32,18 +23,9 @@ keywordTwo ='Edward'
 keywordThree='eward'
 
 is_bot_speaking = False
-mouse = Controller()
 load_dotenv()
 ssl._create_default_https_context = ssl._create_unverified_context
 openai.api_key = os.getenv('OPENAI_API_KEY')
-
-def find_image_on_screen(image_file: str):
-    screen = np.array(pag.screenshot())
-    screen_gray = cv2.cvtColor(screen, cv2.COLOR_BGR2GRAY)  # convert to grayscale
-    template = cv2.imread(image_file, 0)  # load template image in grayscale
-    result = cv2.matchTemplate(screen_gray, template, cv2.TM_CCOEFF_NORMED)
-    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
-    return max_loc[0] + template.shape[1] // 2, max_loc[1] + template.shape[0] // 2  # return the center of the matched area
 
 def duplicate_file(original_file_name, duplicate_file_name):
     with open(original_file_name, 'r') as original_file:
@@ -73,63 +55,67 @@ def trigger_robot(brain_needed, status_queue, is_terminate):
         is_bot_speaking = True
 
         try:
-            status_queue.put("BuellerBot is thinking")
+            #bot unmutes and buys you time
+            status_queue.put("BuellerBot is buying time")
+            location = pag.locateOnScreen('unmute_image.png')
+            if location is not None:
+                x,y,width,height=location
+                center_x = x + width // 2
+                center_y = y + height // 2
+                pag.moveTo(center_x,center_y,duration=0.5)
+                pag.click(clicks=2)
+            else:
+                print("Bot could not find unmute image")
+            is_bot_speaking = True
+            Thread(target=playsound, args=('buyingtime.mp3',)).start()
 
-            #the brains of the operation
+            if is_terminate.value:
+                raise TerminateSignal
+            
+            #bot generates response in the background
+            status_queue.put("BuellerBot is thinking")
             completion = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                {"role": "assistant", "content": f'INSTURCTION: You are {keywordOne}, a college student who is very smart and kind of funny. Please provide a brief, professional, and kind of funny response to the following transcript. KEEP IN MIND that the transcript will likely be cut off. TRANSCRIPT: {brain_needed} INSUTRCTION: DO NOT continue where the transcript left off -- instead, form a COMPLETE SENTENCE to respond to the most recent question. RESPONSE:'}
+                {"role": "assistant", "content": f'INSTURCTION: You are {keywordOne}, a college student who is very smart and kind of funny. Please provide a brief, professional, and kind of funny response to the following transcript. KEEP IN MIND that the transcript will likely be cut off. TRANSCRIPT: {brain_needed} INSUTRCTION: DO NOT continue where the transcript left off -- instead, form a COMPLETE, BRIEF SENTENCE to respond to the most recent question. RESPONSE:'}
                 ],
                 max_tokens=55,
                 temperature=0.2
             )
-
-            #the lobotomy of the operation
             brain_og = completion.choices[0].message.content
             brain_given = brain_og.replace('\n', '')
             with open('brain_given.txt', 'w') as file:
                 file.write(brain_given.strip())
             with open('transcriptions/transcript.txt', 'a') as file:
                 file.write('\n\nPAST RESPONSE: ' + brain_given.strip() + '\n\nTRANSCRIPT:') #allows for follow-up questions. 
-            print(f'Bot Response: {brain_given}')
+            print(f'Bot Going To Say: {brain_given}')
 
-            # Using concurrent.futures to create a separate thread for t2a
-            print('attempting to async')
-            with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(t2a, brain_given) # start t2a in a new thread
-            print('finished sending async')
-            
-            #unmuting and buy time
             if is_terminate.value:
                 raise TerminateSignal
-            status_queue.put("BuellerBot is unmuting")
-            x, y = find_image_on_screen('g_unmute.png')
-            mouse.position = (x, y)
-            mouse.click(Button.left, 1)
-            time.sleep(1)
-            mouse.click(Button.left, 1)
-            status_queue.put("BuellerBot is buying time")
-            if is_terminate.value:
-                raise TerminateSignal
+
+            #bot generates voice and talks
+            t2a(brain_given)
             is_bot_speaking = True
-            playsound('buyingtime.mp3')
-            
-            print('awaiting for async')
-            future.result() # wait for t2a to finish here before playing sound
-
-            #play the actual output and then mute
-            if is_terminate.value:
-                raise TerminateSignal
             status_queue.put("BuellerBot is responding")
-            is_bot_speaking = True
             playsound('output.mp3')
-            status_queue.put("BuellerBot is about to mute")
-            x, y = find_image_on_screen('g_mute.png')
-            mouse.position = (x, y)
-            mouse.click(Button.left, 1)
-            status_queue.put("BuellerBot is on standby")
             is_bot_speaking = False
+
+            if is_terminate.value:
+                raise TerminateSignal
+
+            #bot mutes            
+            status_queue.put("BuellerBot is about to mute")
+            location = pag.locateOnScreen('mic_image.png')
+            if location is not None:
+                x,y,width,height=location
+                center_x = x + width // 2
+                center_y = y + height // 2
+                pag.moveTo(center_x,center_y,duration=0.5)
+                pag.click(clicks=2)
+            else:
+                pag.click(clicks=1)
+                print("Bot could not find mute image, guessing that it is hidden under mouse")
+            status_queue.put("BuellerBot is on standby")
 
         finally:
             is_bot_speaking = False
@@ -143,12 +129,14 @@ def start_transcription(status_queue, is_terminate):
     status_queue.put("BuellerBot is listening")
     
     while True:
-        if is_bot_speaking:
-            continue
 
+        if is_bot_speaking:
+            print('bot speaking flagged')
+            continue
         if is_terminate.value:
             print("terminate hit, break function")
             break
+
         # get most recent wav recording in the recordings directory
         try:
             files = sorted(glob.iglob(recordings_dir), key=os.path.getctime, reverse=True)
@@ -158,8 +146,15 @@ def start_transcription(status_queue, is_terminate):
             continue
         latest_recording = files[0]
         latest_recording_filename = latest_recording.split('/')[1]
+        # get most recent wav recording in the recordings directory
+
         if is_bot_speaking:
-                    continue
+            print('bot speaking flagged')
+            continue
+        if is_terminate.value:
+            print("terminate hit, break function")
+            break
+    
         if os.path.exists(latest_recording) and not latest_recording in transcribed:
             audio = whisper.load_audio(latest_recording)
             audio = whisper.pad_or_trim(audio)
@@ -188,12 +183,16 @@ def start_transcription(status_queue, is_terminate):
                 with open("transcriptions/transcript.txt", "r") as fx:
                     brain_needed = fx.read()
                     if is_bot_speaking:
+                        print('bot speaking flagged')
                         continue
+                    if is_terminate.value:
+                        print("terminate hit, break function")
+                        break
                     if keywordOne in brain_needed or keywordTwo in brain_needed or keywordThree in brain_needed:
                         print('trigger word noted, waiting 1 second for additional context')
                         time.sleep(1.5) #keep recording for 1.5 seconds in case of additional context
                         trigger_robot(brain_needed, status_queue, is_terminate)
-                        brain_needed = brain_needed.replace(keywordOne, '')
+                        brain_needed = brain_needed.replace(keywordOne, '') #this prevents from endless bot loop
                         brain_needed = brain_needed.replace(keywordTwo, '')
                         brain_needed = brain_needed.replace(keywordThree, '')
                         with open("transcriptions/transcript.txt", "w") as fw:

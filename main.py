@@ -129,7 +129,7 @@ class Application(tk.Frame):
     def store_buying_time(self):
         CHUNK_SIZE = 1024
         # audio_generation_id = os.getenv("AUDIO_GENERATION_ID")
-        audio_generation_id = 'lF5jGWAmp19kVdW7vg8C'
+        audio_generation_id = 'EvwBK2Md3qQ34wU2xkoH'
         url = "https://api.elevenlabs.io/v1/text-to-speech/" + audio_generation_id
 
         headers = {
@@ -143,7 +143,7 @@ class Application(tk.Frame):
         }
 
         data = {
-            "text": 'Hey sorry i''m having some audio issues. Is my mic working? Can you hear me?',
+            "text": '"I...yeah, that\'s a good question\n...\nCould you... um, give me a moment to gather my thoughts?"',
             "model_id": "eleven_monolingual_v1",
             "voice_settings": {
                 "stability": 0.5,
@@ -183,7 +183,7 @@ class Application(tk.Frame):
         response = requests.post(url, headers=headers, data=data, files=files)
         custom_voice_id = response.text
         print("this is your custom voice id:", custom_voice_id)
-        os.environ["AUDIO_GENERATION_ID"] = 'lF5jGWAmp19kVdW7vg8C'
+        os.environ["AUDIO_GENERATION_ID"] = 'EvwBK2Md3qQ34wU2xkoH'
         messagebox.showinfo("Information", "Your custom voice is ready!")
         self.store_buying_time()
     
@@ -262,7 +262,6 @@ class Application(tk.Frame):
             self.brain_given_text.see(tk.END)  
 
         self.after(1000, self.update_text)
-
 
 root = tk.Tk()
 app = Application(master=root)
