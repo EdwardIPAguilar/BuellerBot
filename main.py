@@ -9,7 +9,9 @@ import requests
 from transcriber import start_transcription, trigger_robot
 import queue
 import multiprocessing
+from dotenv import load_dotenv
 
+load_dotenv()
 is_terminate = multiprocessing.Value('b', False)
 
 status_queue = queue.Queue()
@@ -135,7 +137,7 @@ class Application(tk.Frame):
         headers = {
             "Accept": "audio/mpeg",
             "Content-Type": "application/json",
-            "xi-api-key": "9e72e6bd272f933f1daa508f8fe9fbc7"
+            "xi-api-key": os.getenv("EL_API_KEY")
         }
 
         params = {
@@ -168,7 +170,7 @@ class Application(tk.Frame):
 
         headers = {
             "Accept": "application/json",
-            "xi-api-key": "9e72e6bd272f933f1daa508f8fe9fbc7"
+            "xi-api-key": os.getenv("EL_API_KEY")
         }
 
         data = {
@@ -198,6 +200,14 @@ class Application(tk.Frame):
         global is_terminate
         is_terminate.value = False
         print("Start Button Pressed")
+        transcript_path = 'transcriptions/transcript.txt'
+        if os.path.exists(transcript_path):
+            with open(transcript_path, 'w') as xr:
+                xr.write("BuellerBot is listening")
+        # update the displayed transcript
+        self.transcript_text.delete('1.0', tk.END)
+        self.transcript_text.insert(tk.END, "BuellerBot is listening")
+        self.transcript_text.see(tk.END)
         subprocess.Popen("./activate-school-bot.sh", shell=True)
         thread = threading.Thread(target=start_transcription, args=(status_queue, is_terminate))
         thread.start()

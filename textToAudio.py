@@ -11,7 +11,7 @@ def t2a(input_text):
     headers = {
         "Accept": "audio/mpeg",
         "Content-Type": "application/json",
-        "xi-api-key": "9e72e6bd272f933f1daa508f8fe9fbc7"
+        "xi-api-key": os.getenv("EL_API_KEY")
     }
 
     params = {
