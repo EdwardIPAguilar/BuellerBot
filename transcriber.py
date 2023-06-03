@@ -49,25 +49,34 @@ for x in files:
     print("deleting:", x)
     os.remove(x)
 
-def trigger_robot(brain_needed, status_queue, is_terminate):
+def audio_file_gen():
+    while True:
+        yield 'buyingtime.mp3'
+        yield 'buyingtime2.mp3'
+
+audio_file = audio_file_gen()
+
+def trigger_robot(brain_needed, status_queue, is_terminate, autovoice, buyingtime):
     def run():
         global is_bot_speaking
         is_bot_speaking = True
 
         try:
+
             #bot unmutes and buys you time
-            status_queue.put("BuellerBot is buying time")
-            location = pag.locateOnScreen('unmute_image.png')
-            if location is not None:
-                x,y,width,height=location
-                center_x = x + width // 2
-                center_y = y + height // 2
-                pag.moveTo(center_x,center_y,duration=0.5)
-                pag.click(clicks=2)
-            else:
-                print("Bot could not find unmute image")
-            is_bot_speaking = True
-            Thread(target=playsound, args=('buyingtime.mp3',)).start()
+            if buyingtime.value:
+                status_queue.put("BuellerBot is buying time")
+                location = pag.locateOnScreen('unmute_image.png')
+                if location is not None:
+                    x,y,width,height=location
+                    center_x = x + width // 2
+                    center_y = y + height // 2
+                    pag.moveTo(center_x,center_y,duration=0.5)
+                    pag.click(clicks=2)
+                else:
+                    print("Bot could not find unmute image")
+                is_bot_speaking = True
+                Thread(target=playsound, args=(next(audio_file),)).start()
 
             if is_terminate.value:
                 raise TerminateSignal
@@ -75,9 +84,9 @@ def trigger_robot(brain_needed, status_queue, is_terminate):
             #bot generates response in the background
             status_queue.put("BuellerBot is thinking")
             completion = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
+                model="gpt-4",
                 messages=[
-                {"role": "assistant", "content": f'INSTURCTION: You are {keywordOne}, a college student who is very smart and kind of funny. Please provide a brief, professional, and kind of funny response to the following transcript. KEEP IN MIND that the transcript will likely be cut off. TRANSCRIPT: {brain_needed} INSUTRCTION: DO NOT continue where the transcript left off -- instead, form a COMPLETE, BRIEF SENTENCE to respond to the most recent question. RESPONSE:'}
+                {"role": "assistant", "content": f'INSTURCTION: You are {keywordOne}, a college student who is very smart and kind of funny. Please provide a brief, professional, and AUTHENTIC COLLEGIATE response to the following transcript. KEEP IN MIND that the transcript will likely be cut off. TRANSCRIPT: {brain_needed} INSUTRCTION: DO NOT continue where the transcript left off -- instead, form a COMPLETE, BRIEF SENTENCE to respond to the most recent question. RESPONSE:'}
                 ],
                 max_tokens=55,
                 temperature=0.2
@@ -94,29 +103,26 @@ def trigger_robot(brain_needed, status_queue, is_terminate):
                 raise TerminateSignal
 
             #bot generates voice and talks
-            t2a(brain_given)
-            is_bot_speaking = True
-            status_queue.put("BuellerBot is responding")
-            playsound('output.mp3')
+            if autovoice.value:
+                t2a(brain_given)
+                is_bot_speaking = True
+                status_queue.put("BuellerBot is responding")
+                playsound('output.mp3')
+                is_bot_speaking = False         
+                status_queue.put("BuellerBot is about to mute")
+                location = pag.locateOnScreen('mic_image.png')
+                if location is not None:
+                    x,y,width,height=location
+                    center_x = x + width // 2
+                    center_y = y + height // 2
+                    pag.moveTo(center_x,center_y,duration=0.5)
+                    pag.click(clicks=2)
+                else:
+                    pag.click(clicks=1)
+                    print("Bot could not find mute image, guessing that it is hidden under mouse")
+                status_queue.put("BuellerBot is on standby")
             is_bot_speaking = False
-
-            if is_terminate.value:
-                raise TerminateSignal
-
-            #bot mutes            
-            status_queue.put("BuellerBot is about to mute")
-            location = pag.locateOnScreen('mic_image.png')
-            if location is not None:
-                x,y,width,height=location
-                center_x = x + width // 2
-                center_y = y + height // 2
-                pag.moveTo(center_x,center_y,duration=0.5)
-                pag.click(clicks=2)
-            else:
-                pag.click(clicks=1)
-                print("Bot could not find mute image, guessing that it is hidden under mouse")
             status_queue.put("BuellerBot is on standby")
-
         finally:
             is_bot_speaking = False
     Thread(target=run).start()
@@ -131,7 +137,6 @@ def start_transcription(status_queue, is_terminate):
     while True:
 
         if is_bot_speaking:
-            print('bot speaking flagged')
             continue
         if is_terminate.value:
             print("terminate hit, break function")
@@ -149,7 +154,6 @@ def start_transcription(status_queue, is_terminate):
         # get most recent wav recording in the recordings directory
 
         if is_bot_speaking:
-            print('bot speaking flagged')
             continue
         if is_terminate.value:
             print("terminate hit, break function")
@@ -183,14 +187,13 @@ def start_transcription(status_queue, is_terminate):
                 with open("transcriptions/transcript.txt", "r") as fx:
                     brain_needed = fx.read()
                     if is_bot_speaking:
-                        print('bot speaking flagged')
                         continue
                     if is_terminate.value:
                         print("terminate hit, break function")
                         break
                     if keywordOne in brain_needed or keywordTwo in brain_needed or keywordThree in brain_needed:
                         print('trigger word noted, waiting 1 second for additional context')
-                        time.sleep(1.5) #keep recording for 1.5 seconds in case of additional context
+                        time.sleep(2) #keep recording for 1.5 seconds in case of additional context
                         trigger_robot(brain_needed, status_queue, is_terminate)
                         brain_needed = brain_needed.replace(keywordOne, '') #this prevents from endless bot loop
                         brain_needed = brain_needed.replace(keywordTwo, '')

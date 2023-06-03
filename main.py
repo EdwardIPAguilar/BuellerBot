@@ -15,6 +15,7 @@ load_dotenv()
 is_terminate = multiprocessing.Value('b', False)
 
 status_queue = queue.Queue()
+# status_queue = multiprocessing.Queue()
 
 class TransparentScrollbar(ttk.Scrollbar):
     def set(self, *args, **kwargs):
@@ -39,6 +40,9 @@ class Application(tk.Frame):
         self.pack(fill='both', expand=True)
         self.create_widgets()
 
+        self.autovoice = multiprocessing.Value('b', True)
+        self.buyingtime = multiprocessing.Value('b', True)
+
         brain_given_path = '/brain_given.txt'
         if not os.path.exists(brain_given_path):
             with open('brain_given.txt', 'w') as xr:
@@ -55,6 +59,12 @@ class Application(tk.Frame):
         self.update_text()
         self.update_status()
         self.master.protocol("WM_DELETE_WINDOW", self.on_closing)
+    
+    def update_buyingtime_value(self, *args):
+        self.buyingtime.value = self.buyingtime_toggle_var.get()
+
+    def update_autovoice_value(self, *args):
+        self.autovoice.value = self.autovoice_toggle_var.get()
 
     def create_widgets(self):
         self.configure(bg='#323232')
@@ -81,19 +91,21 @@ class Application(tk.Frame):
         frame_4th_row = tk.Frame(self, bg="#323232")
         frame_4th_row.grid(row=4, column=0, columnspan=4, pady=15, sticky='ew')
 
-        self.hearme_label = tk.Label(frame_4th_row, text="Can you hear me now:", bg="#323232", fg="white", font=('Helvetica', 14))
-        self.hearme_label.grid(row=0, column=0, padx=(10, 0), sticky='w')
+        self.buyingtime_label = tk.Label(frame_4th_row, text="Activate 'Buying Time':", bg="#323232", fg="white", font=('Helvetica', 14))
+        self.buyingtime_label.grid(row=0, column=0, padx=(10, 0), sticky='w')
         
-        self.hearme_toggle_var = tk.BooleanVar(value=True)
-        self.hearme_toggle = tk.Checkbutton(frame_4th_row, bg="#323232", variable=self.hearme_toggle_var)
-        self.hearme_toggle.grid(row=0, column=1, sticky='w')
+        self.buyingtime_toggle_var = tk.BooleanVar(value=True)
+        self.buyingtime_toggle = tk.Checkbutton(frame_4th_row, bg="#323232", variable=self.buyingtime_toggle_var)
+        self.buyingtime_toggle.grid(row=0, column=1, sticky='w')
+        self.buyingtime_toggle_var.trace_add('write', self.update_buyingtime_value)
 
-        self.automute_label = tk.Label(frame_4th_row, text="Auto Mute / Unmute:", bg="#323232", fg="white", font=('Helvetica', 14))
-        self.automute_label.grid(row=0, column=2, padx=(10, 0), sticky='w')
+        self.autovoice_label = tk.Label(frame_4th_row, text="Activate Voice:", bg="#323232", fg="white", font=('Helvetica', 14))
+        self.autovoice_label.grid(row=0, column=2, padx=(10, 0), sticky='w')
 
-        self.automute_toggle_var = tk.BooleanVar(value=True)
-        self.automute_toggle = tk.Checkbutton(frame_4th_row, bg="#323232",variable=self.automute_toggle_var)
-        self.automute_toggle.grid(row=0, column=3, sticky='w')
+        self.autovoice_toggle_var = tk.BooleanVar(value=True)
+        self.autovoice_toggle = tk.Checkbutton(frame_4th_row, bg="#323232",variable=self.autovoice_toggle_var)
+        self.autovoice_toggle.grid(row=0, column=3, sticky='w')
+        self.autovoice_toggle_var.trace_add('write', self.update_autovoice_value)
 
         self.status_label = tk.Label(frame_4th_row, text="Status: BuellerBot is on standby", bg="#323232", fg="white", font=('Helvetica', 14, 'italic'))
         self.status_label.grid(row=0, column=4, padx=(10, 0), sticky='w')
@@ -128,7 +140,7 @@ class Application(tk.Frame):
         self.rowconfigure(3, weight=1)
         self.columnconfigure([0, 1], weight=1)
 
-    def store_buying_time(self):
+    def store_buying_time(self, text, name):
         CHUNK_SIZE = 1024
         # audio_generation_id = os.getenv("AUDIO_GENERATION_ID")
         audio_generation_id = 'EvwBK2Md3qQ34wU2xkoH'
@@ -145,7 +157,7 @@ class Application(tk.Frame):
         }
 
         data = {
-            "text": '"I...yeah, that\'s a good question\n...\nCould you... um, give me a moment to gather my thoughts?"',
+            "text": text,
             "model_id": "eleven_monolingual_v1",
             "voice_settings": {
                 "stability": 0.5,
@@ -155,7 +167,7 @@ class Application(tk.Frame):
 
         response = requests.post(url, json=data, headers=headers)
         print(response)
-        with open('buyingtime.mp3', 'wb') as f:
+        with open(name, 'wb') as f:
             for chunk in response.iter_content(chunk_size=CHUNK_SIZE):
                 if chunk:
                     f.write(chunk)
@@ -187,14 +199,15 @@ class Application(tk.Frame):
         print("this is your custom voice id:", custom_voice_id)
         os.environ["AUDIO_GENERATION_ID"] = 'EvwBK2Md3qQ34wU2xkoH'
         messagebox.showinfo("Information", "Your custom voice is ready!")
-        self.store_buying_time()
+        self.store_buying_time('I...yeah, that\'s a good question\n...\nCould you... um, give me a moment to gather my thoughts?', 'buyingtime.mp3')
+        self.store_buying_time('Oh, um... that\'s a curveball\n...\n...Just need to figure out the best way to explain this...', 'buyingtime2.mp3')
     
     def generate_now(self):
         transcript_path = 'transcriptions/transcript.txt'
         if os.path.exists(transcript_path) and os.path.getsize(transcript_path) > 0:
             with open(transcript_path, 'r') as transcript_file:
                 transcript = transcript_file.read()
-            trigger_robot(transcript, status_queue, is_terminate)
+            trigger_robot(transcript, status_queue, is_terminate, self.autovoice, self.buyingtime)
 
     def start(self):
         global is_terminate
