@@ -74,7 +74,7 @@ class Application(tk.Frame):
 
         self.button_frame = tk.Frame(self)
         self.button_frame.grid(row=1, column=0, columnspan=4, pady=5)
-
+        
         style = ttk.Style()
         style.configure('TButton', focuscolor="black")
 

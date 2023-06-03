@@ -86,7 +86,7 @@ def trigger_robot(brain_needed, status_queue, is_terminate, autovoice, buyingtim
             completion = openai.ChatCompletion.create(
                 model="gpt-4",
                 messages=[
-                {"role": "assistant", "content": f'INSTURCTION: You are {keywordOne}, a college student who is very smart and kind of funny. Please provide a brief, professional, and AUTHENTIC COLLEGIATE response to the following transcript. KEEP IN MIND that the transcript will likely be cut off. TRANSCRIPT: {brain_needed} INSUTRCTION: DO NOT continue where the transcript left off -- instead, form a COMPLETE, BRIEF SENTENCE to respond to the most recent question. RESPONSE:'}
+                {"role": "assistant", "content": f'INSTURCTION: You are {keywordOne}, a college student who is very smart and kind of funny. Please provide a brief, professional, and AUTHENTIC COLLEGIATE response to the following transcript. KEEP IN MIND that the transcript will likely be cut off. TRANSCRIPT: {brain_needed} INSUTRCTION: DO NOT continue where the transcript left off -- instead, form a COMPLETE, BRIEF SENTENCE to respond to the most recent question. Please respond as would the typical, well-versed, but sometimes awkward college student. Include authentic idiosyncrasies like um… and so-. Write your response more like a vocal than written response. RESPONSE:'}
                 ],
                 max_tokens=55,
                 temperature=0.2
