@@ -39,6 +39,7 @@ class Application(tk.Frame):
         self.configure(bg='white')  # set background color
         self.pack(fill='both', expand=True)
         self.create_widgets()
+        self.check_for_trigger()
 
         self.autovoice = multiprocessing.Value('b', True)
         self.buyingtime = multiprocessing.Value('b', True)
@@ -59,7 +60,13 @@ class Application(tk.Frame):
         self.update_text()
         self.update_status()
         self.master.protocol("WM_DELETE_WINDOW", self.on_closing)
-    
+
+    def check_for_trigger(self):
+        if os.path.exists('triggered.txt'):
+            os.remove('triggered.txt')  # remove the file so we can detect the next trigger
+            messagebox.showinfo("Information", "Your name was mentioned! BuellerBot Is On It")
+        self.after(1000, self.check_for_trigger)  # check again in 1 second
+
     def update_buyingtime_value(self, *args):
         self.buyingtime.value = self.buyingtime_toggle_var.get()
 
@@ -222,7 +229,7 @@ class Application(tk.Frame):
         self.transcript_text.insert(tk.END, "BuellerBot is listening")
         self.transcript_text.see(tk.END)
         subprocess.Popen("./activate-school-bot.sh", shell=True)
-        thread = threading.Thread(target=start_transcription, args=(status_queue, is_terminate))
+        thread = threading.Thread(target=start_transcription, args=(status_queue, is_terminate, self.autovoice, self.buyingtime))
         thread.start()
         
     def clear_transcript(self):

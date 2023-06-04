@@ -130,7 +130,7 @@ def trigger_robot(brain_needed, status_queue, is_terminate, autovoice, buyingtim
 class TerminateSignal(Exception):
     pass
 
-def start_transcription(status_queue, is_terminate):
+def start_transcription(status_queue, is_terminate, autovoice, buyingtime):
     global is_bot_speaking
     status_queue.put("BuellerBot is listening")
     
@@ -188,13 +188,16 @@ def start_transcription(status_queue, is_terminate):
                     brain_needed = fx.read()
                     if is_bot_speaking:
                         continue
+
                     if is_terminate.value:
                         print("terminate hit, break function")
                         break
                     if keywordOne in brain_needed or keywordTwo in brain_needed or keywordThree in brain_needed:
                         print('trigger word noted, waiting 1 second for additional context')
+                        with open('triggered.txt', 'w') as file:
+                            file.write('Your Name Has Been Said! BuellerBot Is On It.')
                         time.sleep(2) #keep recording for 1.5 seconds in case of additional context
-                        trigger_robot(brain_needed, status_queue, is_terminate)
+                        trigger_robot(brain_needed, status_queue, is_terminate, autovoice, buyingtime)
                         brain_needed = brain_needed.replace(keywordOne, '') #this prevents from endless bot loop
                         brain_needed = brain_needed.replace(keywordTwo, '')
                         brain_needed = brain_needed.replace(keywordThree, '')
