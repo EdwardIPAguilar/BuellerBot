@@ -56,6 +56,11 @@ def audio_file_gen():
 
 audio_file = audio_file_gen()
 
+def playsound_and_update(path_to_sound):
+    playsound(path_to_sound)
+    global is_bot_speaking
+    is_bot_speaking = False
+
 def trigger_robot(brain_needed, status_queue, is_terminate, autovoice, buyingtime):
     def run():
         global is_bot_speaking
@@ -66,7 +71,7 @@ def trigger_robot(brain_needed, status_queue, is_terminate, autovoice, buyingtim
             #bot unmutes and buys you time
             if buyingtime.value:
                 status_queue.put("BuellerBot is buying time")
-                location = pag.locateOnScreen('unmute_image.png')
+                location = pag.locateOnScreen('unmute_image.png', confidence=0.8)
                 if location is not None:
                     x,y,width,height=location
                     center_x = x + width // 2
@@ -76,7 +81,7 @@ def trigger_robot(brain_needed, status_queue, is_terminate, autovoice, buyingtim
                 else:
                     print("Bot could not find unmute image")
                 is_bot_speaking = True
-                Thread(target=playsound, args=(next(audio_file),)).start()
+                Thread(target=playsound_and_update, args=(next(audio_file),)).start()
 
             if is_terminate.value:
                 raise TerminateSignal
@@ -105,6 +110,9 @@ def trigger_robot(brain_needed, status_queue, is_terminate, autovoice, buyingtim
             #bot generates voice and talks
             if autovoice.value:
                 t2a(brain_given)
+                while buyingtime.value and is_bot_speaking:
+                    print("API arrived early, waiting for buying time to finish")
+                    time.sleep(0.1)
                 is_bot_speaking = True
                 status_queue.put("BuellerBot is responding")
                 playsound('output.mp3')

@@ -156,7 +156,7 @@ class Application(tk.Frame):
         headers = {
             "Accept": "audio/mpeg",
             "Content-Type": "application/json",
-            "xi-api-key": os.getenv("EL_API_KEY")
+            "xi-api-key": os.getenv('EL_API_KEY')
         }
 
         params = {
@@ -189,7 +189,7 @@ class Application(tk.Frame):
 
         headers = {
             "Accept": "application/json",
-            "xi-api-key": os.getenv("EL_API_KEY")
+            "xi-api-key": os.getenv('EL_API_KEY')
         }
 
         data = {
@@ -210,6 +210,7 @@ class Application(tk.Frame):
         self.store_buying_time('Oh, um... that\'s a curveball\n...\n...Just need to figure out the best way to explain this...', 'buyingtime2.mp3')
     
     def generate_now(self):
+        print('generate now triggered')
         transcript_path = 'transcriptions/transcript.txt'
         if os.path.exists(transcript_path) and os.path.getsize(transcript_path) > 0:
             with open(transcript_path, 'r') as transcript_file:
