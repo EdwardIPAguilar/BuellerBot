@@ -11,5 +11,5 @@ pid2=$!
 echo "transcriber.py PID: $pid1"
 echo "recorder.py PID: $pid2"
 
-echo $pid1 > pids.txt
-echo $pid2 >> pids.txt
+echo $pid1 > misc/pids.txt
+echo $pid2 >> misc/pids.txt

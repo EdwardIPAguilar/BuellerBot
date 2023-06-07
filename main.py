@@ -42,9 +42,9 @@ class Application(tk.Frame):
         self.autovoice = multiprocessing.Value('b', True)
         self.buyingtime = multiprocessing.Value('b', True)
 
-        brain_given_path = '/brain_given.txt'
+        brain_given_path = 'misc/brain_given.txt'
         if not os.path.exists(brain_given_path):
-            with open('brain_given.txt', 'w') as xr:
+            with open('misc/brain_given.txt', 'w') as xr:
                 xr.write("Listening for activation word...")
 
         transcript_path = 'transcriptions/transcript.txt'
@@ -60,8 +60,8 @@ class Application(tk.Frame):
         self.master.protocol("WM_DELETE_WINDOW", self.on_closing)
 
     def check_for_trigger(self):
-        if os.path.exists('triggered.txt'):
-            os.remove('triggered.txt')  # remove the file so we can detect the next trigger
+        if os.path.exists('misc/triggered.txt'):
+            os.remove('misc/triggered.txt')  # remove the file so we can detect the next trigger
             messagebox.showinfo("Information", "Your name was mentioned! BuellerBot Is On It")
         self.after(1000, self.check_for_trigger)  # check again in 1 second
 
@@ -242,7 +242,7 @@ class Application(tk.Frame):
         is_terminate.value = True
         self.clear_transcript()
         print("Stop Button Pressed")
-        with open('pids.txt', 'r') as file:
+        with open('misc/pids.txt', 'r') as file:
             lines = file.readlines()
 
         pid1 = int(lines[0].strip())
@@ -280,7 +280,7 @@ class Application(tk.Frame):
             self.transcript_text.insert(tk.END, transcript)
             self.transcript_text.see(tk.END)  
 
-        brain_given_path = 'brain_given.txt'
+        brain_given_path = 'misc/brain_given.txt'
         if os.path.exists(brain_given_path) and os.path.getsize(brain_given_path) > 0:
             with open(brain_given_path, 'r') as brain_given_file:
                 brain_given = brain_given_file.read().strip()

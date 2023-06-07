@@ -97,7 +97,7 @@ def trigger_robot(brain_needed, status_queue, is_terminate, autovoice, buyingtim
             )
             brain_og = completion.choices[0].message.content
             brain_given = brain_og.replace('\n', '')
-            with open('brain_given.txt', 'w') as file:
+            with open('misc/brain_given.txt', 'w') as file:
                 file.write(brain_given.strip())
             with open('transcriptions/transcript.txt', 'a') as file:
                 file.write('\n\nPAST RESPONSE: ' + brain_given.strip() + '\n\nTRANSCRIPT:') #allows for follow-up questions. 
@@ -201,7 +201,7 @@ def start_transcription(status_queue, is_terminate, autovoice, buyingtime):
                         break
                     if keywordOne in brain_needed or keywordTwo in brain_needed or keywordThree in brain_needed:
                         print('trigger word noted, waiting 1 second for additional context')
-                        with open('triggered.txt', 'w') as file:
+                        with open('misc/triggered.txt', 'w') as file:
                             file.write('Your Name Has Been Said! BuellerBot Is On It.')
                         time.sleep(2) #keep recording for 1.5 seconds in case of additional context
                         trigger_robot(brain_needed, status_queue, is_terminate, autovoice, buyingtime)
