@@ -13,9 +13,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 is_terminate = multiprocessing.Value('b', False)
-
 status_queue = queue.Queue()
-# status_queue = multiprocessing.Queue()
 
 class TransparentScrollbar(ttk.Scrollbar):
     def set(self, *args, **kwargs):
@@ -149,8 +147,7 @@ class Application(tk.Frame):
 
     def store_buying_time(self, text, name):
         CHUNK_SIZE = 1024
-        # audio_generation_id = os.getenv("AUDIO_GENERATION_ID")
-        audio_generation_id = 'EvwBK2Md3qQ34wU2xkoH'
+        audio_generation_id = os.getenv("AUDIO_GENERATION_ID")
         url = "https://api.elevenlabs.io/v1/text-to-speech/" + audio_generation_id
 
         headers = {
@@ -204,7 +201,7 @@ class Application(tk.Frame):
         response = requests.post(url, headers=headers, data=data, files=files)
         custom_voice_id = response.text
         print("this is your custom voice id:", custom_voice_id)
-        os.environ["AUDIO_GENERATION_ID"] = 'EvwBK2Md3qQ34wU2xkoH'
+        os.environ["AUDIO_GENERATION_ID"] = custom_voice_id
         messagebox.showinfo("Information", "Your custom voice is ready!")
         self.store_buying_time('I...yeah, that\'s a good question\n...\nCould you... um, give me a moment to gather my thoughts?', 'buyingtime.mp3')
         self.store_buying_time('Oh, um... that\'s a curveball\n...\n...Just need to figure out the best way to explain this...', 'buyingtime2.mp3')

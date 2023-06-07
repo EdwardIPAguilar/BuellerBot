@@ -13,7 +13,7 @@ freq = 44100
 duration = 5 # in seconds
 print('Started Recording')
 
-device_id = get_device_id_by_name("Blackhole 2ch")
+device_id = get_device_id_by_name("Blackhole 2ch") #if you download another blackhole version, update this to its name
 
 if device_id is None:
     print('Blackhole device not found')

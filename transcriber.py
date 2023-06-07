@@ -13,7 +13,6 @@ import openai
 from textToAudio import t2a
 import pyautogui as pag
 import ssl
-import urllib.request
 from threading import Thread
 from dotenv import load_dotenv
 
@@ -24,7 +23,7 @@ keywordThree='eward'
 
 is_bot_speaking = False
 load_dotenv()
-ssl._create_default_https_context = ssl._create_unverified_context
+ssl._create_default_https_context = ssl._create_unverified_context #this is for if you want to use medium and above whisper models
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
 def duplicate_file(original_file_name, duplicate_file_name):
@@ -51,8 +50,8 @@ for x in files:
 
 def audio_file_gen():
     while True:
-        yield 'buyingtime.mp3'
-        yield 'buyingtime2.mp3'
+        yield 'audio/buyingtime.mp3'
+        yield 'audio/buyingtime2.mp3'
 
 audio_file = audio_file_gen()
 
@@ -71,7 +70,7 @@ def trigger_robot(brain_needed, status_queue, is_terminate, autovoice, buyingtim
             #bot unmutes and buys you time
             if buyingtime.value:
                 status_queue.put("BuellerBot is buying time")
-                location = pag.locateOnScreen('unmute_image.png', confidence=0.8)
+                location = pag.locateOnScreen('images/unmute_image.png', confidence=0.8)
                 if location is not None:
                     x,y,width,height=location
                     center_x = x + width // 2
@@ -115,10 +114,10 @@ def trigger_robot(brain_needed, status_queue, is_terminate, autovoice, buyingtim
                     time.sleep(0.1)
                 is_bot_speaking = True
                 status_queue.put("BuellerBot is responding")
-                playsound('output.mp3')
+                playsound('audio/output.mp3')
                 is_bot_speaking = False         
                 status_queue.put("BuellerBot is about to mute")
-                location = pag.locateOnScreen('mic_image.png')
+                location = pag.locateOnScreen('images/mic_image.png')
                 if location is not None:
                     x,y,width,height=location
                     center_x = x + width // 2
