@@ -4,7 +4,7 @@
 
 ## Realtime Demo of BuellerBot in Action!
 
-https://github.com/NoahValens/welcomeHome/assets/59296703/c38aac40-384d-4db7-862d-b69f98c5f749
+https://github.com/EdwardIPAguilar/BuellerBot/assets/59296703/7bc4bfa1-8104-4ffb-964f-87159ac144a5
 
 ## Table of Contents
 
